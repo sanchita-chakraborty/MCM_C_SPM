@@ -8,7 +8,7 @@ if ~exist('days','var')
  % third parameter does not exist, so default it to something
   days = 10;
 end
-uncertain_days = 10; % this is how many days being used for the uncertainty
+uncertain_days = 20; % this is how many days being used for the uncertainty
 
 start = length(data) - days +1; 
 
@@ -21,6 +21,7 @@ prediction = (prediction-data(length(data)))/data(length(data));
 % find the uncertainty
 
 uncertain_pred = zeros(uncertain_days);
+start = length(data) - uncertain_days + 1;
 for i=1:uncertain_days
     % make prediction for each day
     u_start = start - i;
@@ -33,6 +34,12 @@ end
 uncertainty = 0;
 denominator = uncertain_days * (uncertain_days + 1)/2;
 for i = 1:uncertain_days
-    uncertainty = uncertainty + i * uncertain_pred(i)/denominator
+    uncertainty = uncertainty + (uncertain_days - i+1) * uncertain_pred(i)/denominator;
 end
+
+if isnan(prediction)
+    prediction = 0
+    uncertainty = 1
+end
+    
 
