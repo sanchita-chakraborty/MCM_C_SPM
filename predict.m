@@ -20,26 +20,24 @@ prediction = (prediction-data(length(data)))/data(length(data));
 
 % find the uncertainty
 
-uncertain_pred = zeros(uncertain_days);
+uncertain_pred = zeros(1,uncertain_days);
 start = length(data) - uncertain_days + 1;
 for i=1:uncertain_days
     % make prediction for each day
     u_start = start - i;
-    pred = interpft(data(u_start:(u_start + 10)),1);
-    actual = data(u_start + 10 - i);
-    uncertain_pred(i) = abs((actual - pred)/actual);
+    pred = interpft(data(u_start:(u_start + uncertain_days)),1);
+    day_of = data(u_start + uncertain_days - i-1);
+    actual = data(u_start + uncertain_days - i);
+    uncertain_pred(i) = abs((actual - pred)/data(u_start + uncertain_days - i -1));
 end
 
 % now find overall uncertainty percentage weighted by how recent
-uncertainty = 0;
-denominator = uncertain_days * (uncertain_days + 1)/2;
-for i = 1:uncertain_days
-    uncertainty = uncertainty + (uncertain_days - i+1) * uncertain_pred(i)/denominator;
-end
+% uncertainty = 0;
+% denominator = uncertain_days * (uncertain_days + 1)/2;
+% for i = 1:uncertain_days
+%     uncertainty = uncertainty + (uncertain_days - i+1) * uncertain_pred(i)/denominator;
+% end
 
-if isnan(prediction)
-    prediction = 0
-    uncertainty = 1
-end
+uncertainty = sum(uncertain_pred)/length(uncertain_pred);
     
 

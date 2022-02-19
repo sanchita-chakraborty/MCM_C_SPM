@@ -1,11 +1,13 @@
-clf
+%clf
 gamma = 1; % tunable parameter
+one_percent = 1;
 
 % these are the 'strings' for the different types
 cash_str = 1;
 gold_str = 2;
 bc_str = 3;
-
+days_interp = 35;
+start = 100;
 % currently ignoring weekends so only doing stuff for
 % bchain and gold when both are available
 max_time = 1246;
@@ -33,8 +35,11 @@ pred = [0 0 0];
 gold_uncert = 0;
 bc_uncert = 0;
 
-for today = 100:max_time
+for today = start:max_time
     total_money = cash + gold * dat_gold(today) + bc * dat_bc(today);
+    gold_old = gold;
+    cash_old = cash;
+    bc_old = bc;
     gold = 0;
     cash = 0;
     bc = 0;
@@ -48,8 +53,8 @@ for today = 100:max_time
     
     % make predictions for gold and bc
     
-    [gold_pred, gold_uncert] = predict(dat_gold(1:today),20);
-    [bc_pred, bc_uncert] = predict(dat_bc(1:today),20);
+    [gold_pred, gold_uncert] = predict(dat_gold(1:today),days_interp);
+    [bc_pred, bc_uncert] = predict(dat_bc(1:today),days_interp);
     
     
     %now determine which are the best!
@@ -106,12 +111,36 @@ for today = 100:max_time
         cash = total_money * amt_2;
     end
     
+    if (one_percent)
+        % account for 1% loss from buying / selling
+        total_delta = 0.01 * (abs(gold-gold_old)*dat_gold(today) + abs(bc-bc_old) * dat_bc(today));
+        % remove this from second best
+        if (gold_str == ind_pred_2 && cash_str ~= ind_pred_best)
+            gold = gold - total_delta/dat_gold(today);
+        end
+        if (bc_str == ind_pred_2 && cash_str ~= ind_pred_best)
+            bc = bc -total_delta /dat_bc(today);
+        end
+        if (cash_str == ind_pred_2 && cash_str ~= ind_pred_best)
+            cash = cash - total_delta;
+        end
+
+        if (cash_str == ind_pred_best)
+            cash = cash - total_delta;
+        end
+    end
+
+    
     money_array(today) = total_money;
     
 end
+end_money = total_money
+max_money = max(money_array)
+min_money = min(money_array(start+1:max_time))
 figure(1)
-clf
-plot(money_array(31:max_time))
+hold on
+plot(money_array(start-1:max_time))
+
 
 figure(2)
 clf
@@ -127,7 +156,7 @@ plot(bc_pred_diff)
 
 plot(uncertainty_bc)
 legend('bc prediction difference', 'bc uncertainty')
-% 
+
 % figure(4)
 % clf
 % hold on
