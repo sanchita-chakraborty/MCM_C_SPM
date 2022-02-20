@@ -1,6 +1,9 @@
 %clf
 gamma = 1; % tunable parameter
-one_percent = 0;
+one_percent = 1;
+day_matching = 1;
+cost_gold = 0.01;
+cost_bc = 0.02;
 
 % these are the 'strings' for the different types
 cash_str = 1;
@@ -11,12 +14,7 @@ start = 100;
 % currently ignoring weekends so only doing stuff for
 % bchain and gold when both are available
 max_time = 1246;
-time = (1:max_time)';
-money_array = zeros(1,max_time);
-gold_pred_diff = zeros(1,max_time);
-bc_pred_diff = zeros(1,max_time);
-uncertainty_gold = zeros(1,max_time);
-uncertainty_bc = zeros(1,max_time);
+
 
 T = readtable('LBMA-GOLD.csv');
 dat_gold = table2array(T(1:1256,2));
@@ -25,6 +23,30 @@ dat_gold = dat_gold(good);
 
 T2 = readtable('BCHAIN-MKPRU.csv');
 dat_bc = table2array(T2(1:1826,2));
+
+% account for missing days/ weekends
+h_g = size(T);
+h_g = h_g(1);
+if day_matching
+    dates_gold = table2array(T(:,1));
+    dates_bc = table2array(T2(:,1));
+    [x, indexes] = intersect(dates_bc, dates_gold);
+    new_gold = zeros(size(dates_bc));
+    new_gold(indexes) = table2array(T(:,2));
+    nan_ind = isnan(new_gold);
+    new_gold(nan_ind) = 0;
+    dat_gold = new_gold;
+    day_matching
+end
+
+max_time = length(dat_gold);
+
+time = (1:h_g)';
+money_array = zeros(1,h_g);
+gold_pred_diff = zeros(1,h_g);
+bc_pred_diff = zeros(1,h_g);
+uncertainty_gold = zeros(1,h_g);
+uncertainty_bc = zeros(1,h_g);
 
 % starting conditions
 total_money = 1000;
@@ -51,10 +73,24 @@ for today = start:max_time
     uncertainty_gold(today) = gold_uncert;
     uncertainty_bc(today) = bc_uncert;
     
+    % check if skipping weekend
+    num_ahead = 1;
+    if(today + 1 <= max_time)
+        if (dat_gold(today+1) == 0)
+            num_ahead = 2;
+            if (today + 2 <= max_time)
+                if (dat_gold(today+2) == 0)
+                    num_ahead = 3;
+                end
+            end
+        end
+    end
+        
     % make predictions for gold and bc
-    
-    [gold_pred, gold_uncert] = predict(dat_gold(1:today),days_interp);
-    [bc_pred, bc_uncert] = predict(dat_bc(1:today),days_interp);
+    % note that since the zero days are removed from gold we always only
+    % look ahead 1 day with gold
+    [gold_pred, gold_uncert] = predict(dat_gold(1:today),days_interp,1,1);
+    [bc_pred, bc_uncert] = predict(dat_bc(1:today),days_interp, num_ahead,1);
     
     
     %now determine which are the best!
@@ -113,7 +149,7 @@ for today = start:max_time
     
     if (one_percent)
         % account for 1% loss from buying / selling
-        total_delta = 0.01 * (abs(gold-gold_old)*dat_gold(today) + abs(bc-bc_old) * dat_bc(today));
+        total_delta = cost_gold*abs(gold-gold_old)*dat_gold(today) + cost_bc * abs(bc-bc_old) * dat_bc(today);
         % remove this from second best
         if (gold_str == ind_pred_2 && cash_str ~= ind_pred_best)
             gold = gold - total_delta/dat_gold(today);
@@ -129,34 +165,46 @@ for today = start:max_time
             cash = cash - total_delta;
         end
     end
-
     
+    % if it is a day gold isn't sold then don't buy anything
+    
+    if (dat_gold(today) == 0)
+        gold = gold_old;
+        cash = cash_old;
+        bc = bc_old;
+    end
     money_array(today) = total_money;
-    
+    if (dat_gold(today) == 0)
+        money_array(today) = money_array(today - 1);
+        bc_pred_diff(today) = bc_pred_diff(today-1);
+        gold_pred_diff(today) = gold_pred_diff(today-1);
+        uncertainty_gold(today) = uncertainty_gold(today-1);
+        uncertainty_bc(today) = uncertainty_bc(today-1);
+    end
 end
 end_money = total_money
 max_money = max(money_array)
-min_money = min(money_array(start+1:max_time))
+min_money = min(money_array(start+1:length(money_array)))
 figure(1)
 hold on
-plot(money_array(start-1:max_time))
+plot(money_array(start-1:length(money_array)))
 legend()
-% 
-% 
-% figure(2)
-% clf
-% hold on
-% plot(gold_pred_diff)
-% plot(uncertainty_gold)
-% legend('gold prediction difference', 'gold uncertainty')
-% 
-% figure(3)
-% clf
-% hold on
-% plot(bc_pred_diff)
-% 
-% plot(uncertainty_bc)
-% legend('bc prediction difference', 'bc uncertainty')
+
+
+figure(2)
+clf
+hold on
+plot(gold_pred_diff)
+plot(uncertainty_gold)
+legend('gold prediction difference', 'gold uncertainty')
+
+figure(3)
+clf
+hold on
+plot(bc_pred_diff)
+
+plot(uncertainty_bc)
+legend('bc prediction difference', 'bc uncertainty')
 
 % figure(4)
 % clf
