@@ -1,4 +1,4 @@
-%clf
+clf
 gamma = 1; % tunable parameter
 one_percent = 1;
 
@@ -35,7 +35,7 @@ pred = [0 0 0];
 gold_uncert = 0;
 bc_uncert = 0;
 
-for today = start:max_time
+for today = start:start+1
     total_money = cash + gold * dat_gold(today) + bc * dat_bc(today);
     gold_old = gold;
     cash_old = cash;
@@ -55,6 +55,10 @@ for today = start:max_time
     
     [gold_pred, gold_uncert] = predict(dat_gold(1:today),days_interp);
     [bc_pred, bc_uncert] = predict(dat_bc(1:today),days_interp);
+    
+    % account for alpha = 0.01 in predictions
+    gold_pred = gold_pred - 0.01 * (total_money - gold_old * dat_gold(today))/total_money;
+    bc_pred = bc_pred - 0.01 * (total_money - bc_old * dat_bc(today))/total_money;
     
     
     %now determine which are the best!

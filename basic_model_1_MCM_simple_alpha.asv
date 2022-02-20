@@ -1,4 +1,4 @@
-%clf
+clf
 gamma = 1; % tunable parameter
 one_percent = 1;
 
@@ -37,9 +37,9 @@ bc_uncert = 0;
 
 for today = start:max_time
     total_money = cash + gold * dat_gold(today) + bc * dat_bc(today);
-    gold_old = gold;
-    cash_old = cash;
-    bc_old = bc;
+    gold_old = gold
+    cash_old = cash
+    bc_old = bc
     gold = 0;
     cash = 0;
     bc = 0;
@@ -56,9 +56,13 @@ for today = start:max_time
     [gold_pred, gold_uncert] = predict(dat_gold(1:today),days_interp);
     [bc_pred, bc_uncert] = predict(dat_bc(1:today),days_interp);
     
+    % account for alpha = 0.01 in predictions
+    gold_pred = gold_pred - 0.5;
+    bc_pred = bc_pred - 0.5;
+    
     
     %now determine which are the best!
-    pred = [0; gold_pred; bc_pred];
+    pred = [0; gold_pred; bc_pred]
     worst = [0; gold_pred - gold_uncert; bc_pred-bc_uncert];
     
     [pred_best, ind_pred_best] = max(pred);
@@ -115,13 +119,13 @@ for today = start:max_time
         % account for 1% loss from buying / selling
         total_delta = 0.01 * (abs(gold-gold_old)*dat_gold(today) + abs(bc-bc_old) * dat_bc(today));
         % remove this from second best
-        if (gold_str == ind_pred_2 && cash_str ~= ind_pred_best)
+        if ((gold_str == ind_pred_2) && (cash_str ~= ind_pred_best))
             gold = gold - total_delta/dat_gold(today);
         end
-        if (bc_str == ind_pred_2 && cash_str ~= ind_pred_best)
+        if ((bc_str == ind_pred_2) && (cash_str ~= ind_pred_best))
             bc = bc -total_delta /dat_bc(today);
         end
-        if (cash_str == ind_pred_2 && cash_str ~= ind_pred_best)
+        if ((cash_str == ind_pred_2) && (cash_str ~= ind_pred_best))
             cash = cash - total_delta;
         end
 
