@@ -1,6 +1,7 @@
 %clf
 gamma = 1; % tunable parameter
 one_percent = 1;
+prediction_affect = 0.01;
 
 % these are the 'strings' for the different types
 cash_str = 1;
@@ -13,6 +14,9 @@ start = 100;
 max_time = 1246;
 time = (1:max_time)';
 money_array = zeros(1,max_time);
+gold_pred_array = zeros(1,max_time);
+bc_pred_array = zeros(1,max_time);
+
 gold_pred_diff = zeros(1,max_time);
 bc_pred_diff = zeros(1,max_time);
 uncertainty_gold = zeros(1,max_time);
@@ -57,9 +61,11 @@ for today = start:max_time
     [bc_pred, bc_uncert] = predict(dat_bc(1:today),days_interp);
     
     % account for alpha = 0.01 in predictions
-    gold_pred = gold_pred - 0.02;
-    bc_pred = bc_pred - 0.02;
+    gold_pred = gold_pred - prediction_affect;
+    bc_pred = bc_pred - prediction_affect;
     
+    gold_pred_array(today) = gold_pred;
+    bc_pred_array(today) = bc_pred;
     
     %now determine which are the best!
     pred = [0; gold_pred; bc_pred]

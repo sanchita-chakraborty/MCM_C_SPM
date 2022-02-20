@@ -69,8 +69,8 @@ for today = start:max_time
     
     % account for alpha = 0.01 in predictions
     gold_pred = gold_pred + prediction_affect * ( gold_old * dat_gold(today))/total_money;
-    bc_pred = bc_pred + prediction_affect * (bc_old * dat_bc(today))/total_money;
-    cash_pred = 0% - prediction_affect * (total_money - 0)/total_money;
+    bc_pred = bc_pred + prediction_affect * (total_money - bc_old * dat_bc(today))/total_money;
+    cash_pred = 0 - prediction_affect * (total_money - 0)/total_money;
     
     gold_pred_array(today) = gold_pred;
     bc_pred_array(today) = bc_pred;

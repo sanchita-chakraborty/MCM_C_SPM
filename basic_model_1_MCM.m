@@ -1,6 +1,6 @@
 %clf
 gamma = 1; % tunable parameter
-one_percent = 1;
+one_percent = 0;
 
 % these are the 'strings' for the different types
 cash_str = 1;
